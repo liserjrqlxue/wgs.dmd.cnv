@@ -13,6 +13,7 @@ type Info struct {
 	segMean     float64
 	depth       float64
 	ratio       float64
+	fixRatio    float64
 	factor      float64
 	percent     float64
 	allAnno     string
@@ -34,6 +35,7 @@ var infoTitle = []string{
 	"depth",
 	"ratio",
 	"factor",
+	"fixRatio",
 	"percent",
 	"allAnno",
 	"allCoverage",
@@ -43,7 +45,7 @@ var infoTitle = []string{
 
 func (info *Info) String() string {
 	return fmt.Sprintf(
-		"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s",
+		"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s",
 		info.ID,
 		info.chr,
 		info.start,

@@ -40,6 +40,11 @@ var (
 		"",
 		"gender,{M|F}",
 	)
+	depthX = flag.Float64(
+		"depthX",
+		0,
+		"average depth of chrX",
+	)
 	prefix = flag.String(
 		"prefix",
 		"",
@@ -99,10 +104,12 @@ func main() {
 		binInfo   []*Info
 		cnvInfo   []*Info
 
-		depths  []float64
-		factors []float64
-		bin     = *width
-		n       int
+		depths    []float64
+		factors   []float64
+		ratios    []float64
+		fixRatios []float64
+		bin       = *width
+		n         int
 	)
 
 	if len(depthData) != len(controlData) {
@@ -118,9 +125,15 @@ func main() {
 			depth:   stringsUtil.Atof(str[2]),
 			factor:  stringsUtil.Atof(controlData[i]["mean"]),
 		}
-		depthInfo = append(depthInfo, info)
+		info.ratio = info.depth / *depthX
+		info.fixRatio = info.ratio / info.factor
+
 		depths = append(depths, info.depth)
 		factors = append(factors, info.factor)
+		ratios = append(ratios, info.ratio)
+		fixRatios = append(fixRatios, info.fixRatio)
+
+		depthInfo = append(depthInfo, info)
 	}
 
 	n = len(depthInfo) / bin
@@ -202,8 +215,10 @@ func main() {
 			exonCnvLength = 0
 			coverages     []string
 
-			cnvFactors []float64
-			cnvDepths  []float64
+			cnvFactors   []float64
+			cnvDepths    []float64
+			cnvRatios    []float64
+			cnvFixRatios []float64
 		)
 
 		info.percent = math.Min(info.percent, 100)
@@ -213,9 +228,16 @@ func main() {
 			if info2.start <= info.end && info2.end >= info.start {
 				cnvDepths = append(cnvDepths, info2.depth)
 				cnvFactors = append(cnvFactors, info2.factor)
+				cnvRatios = append(cnvRatios, info2.factor)
+				cnvFixRatios = append(cnvFixRatios, info2.factor)
 			}
 		}
 		info.depth = math2.Mean(cnvDepths)
+		info.factor = math2.Mean(cnvFactors)
+		info.ratio = math2.Mean(cnvRatios)
+		info.fixRatio = math2.Mean(cnvFixRatios)
+
+		log.Printf("Compare:\tratio:[%f:%f]\tfixRatio:[%f:%f]", info.ratio, info.depth / *depthX, info.fixRatio, info.ratio/info.factor)
 
 		// exon info
 		for _, e := range exonInfo {
