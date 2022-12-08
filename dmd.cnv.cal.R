@@ -72,13 +72,12 @@ filter<-output[output$percent>=threshold,]
 if(nrow(filter)>0){
 	for(j in 1:nrow(filter)){
 		filter[j,]$percent<-min(filter[j,]$percent,100)
-		filter[j,]$loc.end<-bins[bins$pos==filter[j,]$loc.end,]$end
+		filter[j,]$loc.end<-max(bins[bins$pos<=filter[j,]$loc.end,]$end)
 		start<-filter[j,]$loc.start
 		end<-filter[j,]$loc.end
 		filter[j,]$length<-end-start+1
 		filter[j,]$factor<-mean(bins[bins$pos>=start&bins$pos<=end,]$factor)
 
-	#colnames(exon)<-c("chr","start","end","length","gene","trans","strand","exon")
 		t.exon<-exon[exon$end>=start&exon$start<=end,]
 		anno<-c()
 		coverage<-c()
@@ -89,8 +88,8 @@ if(nrow(filter)>0){
 				t.end<-min(end,t.exon[k,]$end)
 				coverage<-append(coverage,(t.end-t.start+1)/(t.exon[k,]$end-t.exon[k,]$start+1))
 			}
-			filter[j,]$anno<-paste(anno,sep=",")
-			filter[j,]$coverage<-paste(coverage,sep=",")
+			filter[j,]$anno<-paste(anno,collapse=",")
+			filter[j,]$coverage<-paste(coverage,collapse=",")
 		}
 		
 	}
