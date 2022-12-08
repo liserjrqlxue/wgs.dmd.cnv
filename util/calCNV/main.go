@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/liserjrqlxue/goUtil/fmtUtil"
+	math2 "github.com/liserjrqlxue/goUtil/math"
 	"github.com/liserjrqlxue/goUtil/osUtil"
 	"github.com/liserjrqlxue/goUtil/simpleUtil"
 	"github.com/liserjrqlxue/goUtil/stringsUtil"
@@ -29,30 +30,26 @@ var (
 		"",
 		"cnv result",
 	)
-	exon = flag.String(
-		"exon",
-		filepath.Join(etcPath, "exon.info.txt"),
-		"exon info",
-	)
 	gender = flag.String(
 		"gender",
 		"",
 		"gender,{M|F}",
-	)
-	width = flag.Int(
-		"width",
-		50,
-		"bin width",
 	)
 	prefix = flag.String(
 		"prefix",
 		"",
 		"output prefix",
 	)
+	// config
 	filter = flag.Bool(
 		"filter",
 		false,
 		"output filter exon cnv",
+	)
+	width = flag.Int(
+		"width",
+		50,
+		"bin width",
 	)
 	thresholdCoverage = flag.Float64(
 		"coverage",
@@ -63,6 +60,16 @@ var (
 		"percent",
 		75.0,
 		"percent threshold",
+	)
+	exon = flag.String(
+		"exon",
+		filepath.Join(etcPath, "exon.info.txt"),
+		"exon info",
+	)
+	control = flag.String(
+		"control",
+		filepath.Join(etcPath, "control.txt"),
+		"control to correct ratio",
 	)
 )
 
@@ -77,6 +84,8 @@ func main() {
 		*prefix = *cna
 	}
 
+	var bin = *width
+
 	var exonInfo []*Exon
 	for _, str := range textUtil.File2Slice(*exon, "\t") {
 		var exon = &Exon{
@@ -90,6 +99,38 @@ func main() {
 			exon:   str[7],
 		}
 		exonInfo = append(exonInfo, exon)
+	}
+
+	var controlData, _ = textUtil.File2MapArray(*control, "\t", nil)
+	var (
+		controls []*Info
+		factors  []float64
+	)
+	for _, datum := range controlData {
+		var info = &Info{
+			chr:      datum["chromosome"],
+			locStart: stringsUtil.Atoi(datum["pos"]),
+			locEnd:   stringsUtil.Atoi(datum["pos"]),
+			numMark:  1,
+			factor:   stringsUtil.Atof(datum["mean"]),
+		}
+		factors = append(factors, info.factor)
+		controls = append(controls, info)
+	}
+
+	var (
+		binControls []*Info
+	)
+	var n = len(controls) / bin
+	for i := 0; i < n; i++ {
+		var info = &Info{
+			chr:      binControls[i*bin].chr,
+			locStart: binControls[i*bin].locStart,
+			locEnd:   binControls[(i+1)*bin-1].locEnd,
+			numMark:  bin,
+			factor:   math2.Mean(factors[i*bin : (i+1)*bin-1]),
+		}
+		binControls = append(binControls, info)
 	}
 
 	var cnaData, _ = textUtil.File2MapArray(*cna, "\t", nil)
@@ -107,6 +148,7 @@ func main() {
 		}
 		cnvInfo = append(cnvInfo, info)
 	}
+
 	var mergeInfo []*Info
 	var i2 = 0 // 下一个
 	for i, info := range cnvInfo {
@@ -142,6 +184,17 @@ func main() {
 			exonCnvLength = 0
 			coverages     []string
 		)
+
+		// factor
+		var cnvFactors []float64
+		for _, binControl := range binControls {
+			if binControl.locStart <= info.locEnd && binControl.locEnd >= info.locStart {
+				cnvFactors = append(cnvFactors, binControl.factor)
+			}
+		}
+		info.factor = math2.Mean(cnvFactors)
+
+		// exon info
 		for _, e := range exonInfo {
 			if e.start <= info.locEnd && e.end >= info.locStart {
 				info.annos = append(info.annos, e.exon)
@@ -173,11 +226,13 @@ func main() {
 			info.coverage = strings.Join(coverages, ",")
 			info.allCoverage = float64(exonCnvLength) / float64(exonLength)
 		}
+
 		fmtUtil.Fprintln(output, info.String())
 		if info.allCoverage >= *thresholdCoverage && info.percent >= *thresholdPercent {
 			fmtUtil.Fprintln(filterOutput, info.String())
 		}
 	}
+
 }
 
 func mergeInfos(x, y *Info, gender string) *Info {

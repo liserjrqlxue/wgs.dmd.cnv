@@ -10,6 +10,7 @@ type Info struct {
 	numMark     int
 	segMean     float64
 	ratio       float64
+	factor      float64
 	percent     float64
 	allAnno     string
 	allCoverage float64
@@ -22,9 +23,9 @@ type Info struct {
 
 func (info *Info) String() string {
 	return fmt.Sprintf(
-		"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s",
+		"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s",
 		info.ID, info.chr, info.locStart, info.locEnd, info.numMark,
-		info.segMean, info.ratio, info.percent,
+		info.segMean, info.ratio, info.factor, info.percent,
 		info.allAnno, info.allCoverage, info.anno, info.coverage,
 	)
 }
