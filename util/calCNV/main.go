@@ -229,9 +229,9 @@ func main() {
 			if info2.start <= info.end && info2.end >= info.start {
 				cnvDepths = append(cnvDepths, info2.depth)
 				cnvFactors = append(cnvFactors, info2.factor)
-				cnvRatios = append(cnvRatios, info2.factor)
-				cnvDepthRatios = append(cnvDepthRatios, info2.factor)
-				cnvFixRatios = append(cnvFixRatios, info2.factor)
+				cnvRatios = append(cnvRatios, info2.ratio)
+				cnvDepthRatios = append(cnvDepthRatios, info2.depthRatio)
+				cnvFixRatios = append(cnvFixRatios, info2.fixRatio)
 			}
 		}
 		info.depth = math2.Mean(cnvDepths)
