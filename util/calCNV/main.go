@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/liserjrqlxue/goUtil/fmtUtil"
 	"github.com/liserjrqlxue/goUtil/osUtil"
 	"github.com/liserjrqlxue/goUtil/simpleUtil"
@@ -30,6 +31,15 @@ type Info struct {
 
 	annos     []string
 	coverages []float64
+}
+
+func (info *Info) String() string {
+	return fmt.Sprintf(
+		"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s",
+		info.ID, info.chr, info.locStart, info.locEnd, info.numMark,
+		info.segMean, info.ratio, info.percent,
+		info.allAnno, info.allCoverage, info.anno, info.coverage,
+	)
 }
 
 type Exon struct {
@@ -194,21 +204,9 @@ func main() {
 			info.coverage = strings.Join(coverages, ",")
 			info.allCoverage = float64(exonCnvLength) / float64(exonLength)
 		}
-		fmtUtil.Fprintf(
-			output,
-			"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s\n",
-			info.ID, info.chr, info.locStart, info.locEnd, info.numMark,
-			info.segMean, info.ratio, info.percent,
-			info.allAnno, info.allCoverage, info.anno, info.coverage,
-		)
+		fmtUtil.Fprintln(output, info.String())
 		if info.allCoverage >= *thresholdCoverage && info.percent >= *thresholdPercent {
-			fmtUtil.Fprintf(
-				filterOutput,
-				"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s\n",
-				info.ID, info.chr, info.locStart, info.locEnd, info.numMark,
-				info.segMean, info.ratio, info.percent,
-				info.allAnno, info.allCoverage, info.anno, info.coverage,
-			)
+			fmtUtil.Fprintln(filterOutput, info.String())
 		}
 	}
 }
