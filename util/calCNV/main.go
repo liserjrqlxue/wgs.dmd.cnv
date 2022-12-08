@@ -168,7 +168,7 @@ func main() {
 	for _, datum := range cnaData {
 		var info = &Info{
 			ID:      datum["ID"],
-			chr:     datum["chr"],
+			chr:     datum["chrom"],
 			start:   stringsUtil.Atoi(datum["loc.start"]),
 			end:     stringsUtil.Atoi(datum["loc.end"]),
 			numMark: stringsUtil.Atoi(datum["num.mark"]),
