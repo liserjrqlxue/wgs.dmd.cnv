@@ -104,12 +104,12 @@ func main() {
 		binInfo   []*Info
 		cnvInfo   []*Info
 
-		depths    []float64
-		factors   []float64
-		ratios    []float64
-		fixRatios []float64
-		bin       = *width
-		n         int
+		depths      []float64
+		factors     []float64
+		depthRatios []float64
+		fixRatios   []float64
+		bin         = *width
+		n           int
 	)
 
 	if len(depthData) != len(controlData) {
@@ -125,12 +125,12 @@ func main() {
 			depth:   stringsUtil.Atof(str[2]),
 			factor:  stringsUtil.Atof(controlData[i]["mean"]),
 		}
-		info.ratio = info.depth / *depthX
-		info.fixRatio = info.ratio / info.factor
+		info.depthRatio = info.depth / *depthX
+		info.fixRatio = info.depthRatio / info.factor
 
 		depths = append(depths, info.depth)
 		factors = append(factors, info.factor)
-		ratios = append(ratios, info.ratio)
+		depthRatios = append(depthRatios, info.depthRatio)
 		fixRatios = append(fixRatios, info.fixRatio)
 
 		depthInfo = append(depthInfo, info)
@@ -139,12 +139,14 @@ func main() {
 	n = len(depthInfo) / bin
 	for i := 0; i < n; i++ {
 		var info = &Info{
-			chr:     depthInfo[i*bin].chr,
-			start:   depthInfo[i*bin].start,
-			end:     depthInfo[(i+1)*bin-1].end,
-			numMark: bin,
-			depth:   math2.Mean(depths[i*bin : (i+1)*bin-1]),
-			factor:  math2.Mean(factors[i*bin : (i+1)*bin-1]),
+			chr:        depthInfo[i*bin].chr,
+			start:      depthInfo[i*bin].start,
+			end:        depthInfo[(i+1)*bin-1].end,
+			numMark:    bin,
+			depth:      math2.Mean(depths[i*bin : (i+1)*bin-1]),
+			factor:     math2.Mean(factors[i*bin : (i+1)*bin-1]),
+			depthRatio: math2.Mean(factors[i*bin : (i+1)*bin-1]),
+			fixRatio:   math2.Mean(factors[i*bin : (i+1)*bin-1]),
 		}
 		binInfo = append(binInfo, info)
 	}
@@ -215,10 +217,11 @@ func main() {
 			exonCnvLength = 0
 			coverages     []string
 
-			cnvFactors   []float64
-			cnvDepths    []float64
-			cnvRatios    []float64
-			cnvFixRatios []float64
+			cnvRatios      []float64
+			cnvDepths      []float64
+			cnvFactors     []float64
+			cnvDepthRatios []float64
+			cnvFixRatios   []float64
 		)
 
 		info.percent = math.Min(info.percent, 100)
@@ -229,12 +232,14 @@ func main() {
 				cnvDepths = append(cnvDepths, info2.depth)
 				cnvFactors = append(cnvFactors, info2.factor)
 				cnvRatios = append(cnvRatios, info2.factor)
+				cnvDepthRatios = append(cnvDepthRatios, info2.factor)
 				cnvFixRatios = append(cnvFixRatios, info2.factor)
 			}
 		}
 		info.depth = math2.Mean(cnvDepths)
 		info.factor = math2.Mean(cnvFactors)
 		info.ratio = math2.Mean(cnvRatios)
+		info.depthRatio = math2.Mean(cnvDepthRatios)
 		info.fixRatio = math2.Mean(cnvFixRatios)
 
 		log.Printf("Compare:\tratio:[%f:%f]\tfixRatio:[%f:%f]", info.ratio, info.depth / *depthX, info.fixRatio, info.ratio/info.factor)

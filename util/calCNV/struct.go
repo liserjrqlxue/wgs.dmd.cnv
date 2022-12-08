@@ -13,6 +13,7 @@ type Info struct {
 	segMean     float64
 	depth       float64
 	ratio       float64
+	depthRatio  float64
 	fixRatio    float64
 	factor      float64
 	percent     float64
@@ -34,8 +35,9 @@ var infoTitle = []string{
 	"segMean",
 	"depth",
 	"ratio",
-	"factor",
+	"depthRatio",
 	"fixRatio",
+	"factor",
 	"percent",
 	"allAnno",
 	"allCoverage",
@@ -54,6 +56,8 @@ func (info *Info) String() string {
 		info.segMean,
 		info.depth,
 		info.ratio,
+		info.depthRatio,
+		info.fixRatio,
 		info.factor,
 		info.percent,
 		info.allAnno,
