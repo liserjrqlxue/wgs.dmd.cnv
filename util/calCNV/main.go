@@ -209,17 +209,15 @@ func main() {
 		fmtUtil.FprintStringArray(filterOutput, infoTitle, "\t")
 	}
 
-	for i, info := range mergeInfo {
+	for _, info := range mergeInfo {
 		var (
 			exonLength    = 0
 			exonCnvLength = 0
 			coverages     []string
 
-			cnvRatios      []float64
-			cnvDepths      []float64
-			cnvFactors     []float64
-			cnvDepthRatios []float64
-			cnvFixRatios   []float64
+			cnvRatios  []float64
+			cnvDepths  []float64
+			cnvFactors []float64
 		)
 
 		info.percent = math.Min(info.percent, 100)
@@ -230,17 +228,15 @@ func main() {
 				cnvDepths = append(cnvDepths, info2.depth)
 				cnvFactors = append(cnvFactors, info2.factor)
 				cnvRatios = append(cnvRatios, info2.ratio)
-				cnvDepthRatios = append(cnvDepthRatios, info2.depthRatio)
-				cnvFixRatios = append(cnvFixRatios, info2.fixRatio)
 			}
 		}
 		info.depth = math2.Mean(cnvDepths)
 		info.factor = math2.Mean(cnvFactors)
 		info.ratio = math2.Mean(cnvRatios)
-		info.depthRatio = math2.Mean(cnvDepthRatios)
-		info.fixRatio = math2.Mean(cnvFixRatios)
 
-		log.Printf("Compare:\t%d\tdepthRatio:[%f:%f/%f]\tfixRatio:[%f:%f/%f]", i, info.depthRatio, info.depth, *depthX, info.fixRatio, info.depthRatio, info.factor)
+		info.segMean = math.Log2(info.ratio)
+		info.depthRatio = info.depth / *depthX
+		info.fixRatio = info.depthRatio / info.factor
 
 		// exon info
 		for _, e := range exonInfo {
