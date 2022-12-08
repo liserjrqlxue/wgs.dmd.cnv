@@ -144,7 +144,6 @@ func main() {
 			numMark: stringsUtil.Atoi(datum["num.mark"]),
 			segMean: stringsUtil.Atof(datum["seg.mean"]),
 			ratio:   stringsUtil.Atof(datum["ratio"]),
-			percent: stringsUtil.Atof(datum["percent"]),
 		}
 		cnvInfo = append(cnvInfo, info)
 	}
@@ -184,6 +183,8 @@ func main() {
 			exonCnvLength = 0
 			coverages     []string
 		)
+
+		info.percent = math.Min(info.percent, 100)
 
 		// factor
 		var cnvFactors []float64
