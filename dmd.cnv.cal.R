@@ -53,12 +53,3 @@ output$ID=sampleID
 output$ratio<-2^output$seg.mean
 
 write.table(output,paste0(outdir,"/",sampleID,".DMD.bin",bin,".txt"),col.names=T,row.names=F,sep="\t",quote=F)
-
-output$length<-0
-# annotation
-for(j in 1:nrow(output)){
-    output[j,]$loc.end<-max(bins[bins$pos<=output[j,]$loc.end,]$end)
-    start<-output[j,]$loc.start
-    end<-output[j,]$loc.end
-    output[j,]$length<-end-start+1
-}

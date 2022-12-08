@@ -90,15 +90,14 @@ func main() {
 	}
 
 	var (
+		depthData      = textUtil.File2Slice(*depth, "\t")
 		controlData, _ = textUtil.File2MapArray(*control, "\t", nil)
 		cnaData, _     = textUtil.File2MapArray(*cna, "\t", nil)
 
-		exonInfo    []*Exon
-		controls    []*Info
-		binControls []*Info
-		depthInfo   []*Info
-		binInfo     []*Info
-		cnvInfo     []*Info
+		exonInfo  []*Exon
+		depthInfo []*Info
+		binInfo   []*Info
+		cnvInfo   []*Info
 
 		depths  []float64
 		factors []float64
@@ -106,16 +105,24 @@ func main() {
 		n       int
 	)
 
-	for _, str := range textUtil.File2Slice(*depth, "\t") {
+	if len(depthData) != len(controlData) {
+		log.Fatalf("nrow error:[depth:%d]vs.[control:%d]\n", len(depthData), len(controlData))
+	}
+
+	for i, str := range depthData {
 		var info = &Info{
-			chr:   str[0],
-			start: stringsUtil.Atoi(str[1]),
-			end:   stringsUtil.Atoi(str[1]),
-			depth: stringsUtil.Atof(str[2]),
+			chr:     str[0],
+			start:   stringsUtil.Atoi(str[1]),
+			end:     stringsUtil.Atoi(str[1]),
+			numMark: 1,
+			depth:   stringsUtil.Atof(str[2]),
+			factor:  stringsUtil.Atof(controlData[i]["mean"]),
 		}
 		depthInfo = append(depthInfo, info)
 		depths = append(depths, info.depth)
+		factors = append(factors, info.factor)
 	}
+
 	n = len(depthInfo) / bin
 	for i := 0; i < n; i++ {
 		var info = &Info{
@@ -124,6 +131,7 @@ func main() {
 			end:     depthInfo[(i+1)*bin-1].end,
 			numMark: bin,
 			depth:   math2.Mean(depths[i*bin : (i+1)*bin-1]),
+			factor:  math2.Mean(factors[i*bin : (i+1)*bin-1]),
 		}
 		binInfo = append(binInfo, info)
 	}
@@ -140,30 +148,6 @@ func main() {
 			exon:   str[7],
 		}
 		exonInfo = append(exonInfo, exon)
-	}
-
-	for _, datum := range controlData {
-		var info = &Info{
-			chr:     datum["chromosome"],
-			start:   stringsUtil.Atoi(datum["pos"]),
-			end:     stringsUtil.Atoi(datum["pos"]),
-			numMark: 1,
-			factor:  stringsUtil.Atof(datum["mean"]),
-		}
-		factors = append(factors, info.factor)
-		controls = append(controls, info)
-	}
-
-	n = len(controls) / bin
-	for i := 0; i < n; i++ {
-		var info = &Info{
-			chr:     binControls[i*bin].chr,
-			start:   binControls[i*bin].start,
-			end:     binControls[(i+1)*bin-1].end,
-			numMark: bin,
-			factor:  math2.Mean(factors[i*bin : (i+1)*bin-1]),
-		}
-		binControls = append(binControls, info)
 	}
 
 	for _, datum := range cnaData {
@@ -217,24 +201,18 @@ func main() {
 			exonLength    = 0
 			exonCnvLength = 0
 			coverages     []string
+
+			cnvFactors []float64
+			cnvDepths  []float64
 		)
 
 		info.percent = math.Min(info.percent, 100)
 
-		// factor
-		var cnvFactors []float64
-		for _, info2 := range binControls {
-			if info2.start <= info.end && info2.end >= info.start {
-				cnvFactors = append(cnvFactors, info2.factor)
-			}
-		}
-		info.factor = math2.Mean(cnvFactors)
-
-		// depth
-		var cnvDepths []float64
+		// depth + factor
 		for _, info2 := range binInfo {
 			if info2.start <= info.end && info2.end >= info.start {
 				cnvDepths = append(cnvDepths, info2.depth)
+				cnvFactors = append(cnvFactors, info2.factor)
 			}
 		}
 		info.depth = math2.Mean(cnvDepths)
