@@ -145,8 +145,8 @@ func main() {
 			numMark:    bin,
 			depth:      math2.Mean(depths[i*bin : (i+1)*bin-1]),
 			factor:     math2.Mean(factors[i*bin : (i+1)*bin-1]),
-			depthRatio: math2.Mean(factors[i*bin : (i+1)*bin-1]),
-			fixRatio:   math2.Mean(factors[i*bin : (i+1)*bin-1]),
+			depthRatio: math2.Mean(depthRatios[i*bin : (i+1)*bin-1]),
+			fixRatio:   math2.Mean(fixRatios[i*bin : (i+1)*bin-1]),
 		}
 		binInfo = append(binInfo, info)
 	}
@@ -240,7 +240,7 @@ func main() {
 		info.depthRatio = math2.Mean(cnvDepthRatios)
 		info.fixRatio = math2.Mean(cnvFixRatios)
 
-		log.Printf("Compare:\t%d\tdepthRatio:[%f:%f]\tfixRatio:[%f:%f]", i, info.depthRatio, info.depth / *depthX, info.fixRatio, info.depthRatio/info.factor)
+		log.Printf("Compare:\t%d\tdepthRatio:[%f:%f/%f]\tfixRatio:[%f:%f/%f]", i, info.depthRatio, info.depth, *depthX, info.fixRatio, info.depthRatio, info.factor)
 
 		// exon info
 		for _, e := range exonInfo {
