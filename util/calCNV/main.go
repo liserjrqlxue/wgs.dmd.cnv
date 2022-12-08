@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -53,6 +54,13 @@ type Exon struct {
 	exon   string
 }
 
+// os
+var (
+	ex, _   = os.Executable()
+	exPath  = filepath.Dir(ex)
+	etcPath = filepath.Join(exPath, "..", "..", "etc")
+)
+
 // flag
 var (
 	cna = flag.String(
@@ -62,7 +70,7 @@ var (
 	)
 	exon = flag.String(
 		"exon",
-		"",
+		filepath.Join(etcPath, "exon.info.txt"),
 		"exon info",
 	)
 	gender = flag.String(
