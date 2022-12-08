@@ -47,7 +47,7 @@ var infoTitle = []string{
 
 func (info *Info) String() string {
 	return fmt.Sprintf(
-		"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s",
+		"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s",
 		info.ID,
 		info.chr,
 		info.start,

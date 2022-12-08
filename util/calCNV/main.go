@@ -200,18 +200,16 @@ func main() {
 	}
 
 	var output = osUtil.Create(*prefix + ".merge.txt")
-	defer simpleUtil.DeferClose(output)
 	var filterOutput *os.File
 	if *filter {
 		filterOutput = osUtil.Create(*prefix + ".merge.filter.txt")
-
 	}
 	fmtUtil.FprintStringArray(output, infoTitle, "\t")
 	if *filter {
 		fmtUtil.FprintStringArray(filterOutput, infoTitle, "\t")
 	}
 
-	for _, info := range mergeInfo {
+	for i, info := range mergeInfo {
 		var (
 			exonLength    = 0
 			exonCnvLength = 0
@@ -242,7 +240,7 @@ func main() {
 		info.depthRatio = math2.Mean(cnvDepthRatios)
 		info.fixRatio = math2.Mean(cnvFixRatios)
 
-		log.Printf("Compare:\tratio:[%f:%f]\tfixRatio:[%f:%f]", info.ratio, info.depth / *depthX, info.fixRatio, info.ratio/info.factor)
+		log.Printf("Compare:\t%d\tdepthRatio:[%f:%f]\tfixRatio:[%f:%f]", i, info.depthRatio, info.depth / *depthX, info.fixRatio, info.depthRatio/info.factor)
 
 		// exon info
 		for _, e := range exonInfo {
@@ -278,9 +276,14 @@ func main() {
 		}
 
 		fmtUtil.Fprintln(output, info.String())
-		if info.allCoverage >= *thresholdCoverage && info.percent >= *thresholdPercent {
+		if *filter && info.allCoverage >= *thresholdCoverage && info.percent >= *thresholdPercent {
 			fmtUtil.Fprintln(filterOutput, info.String())
 		}
+	}
+
+	simpleUtil.DeferClose(output)
+	if *filter {
+		simpleUtil.CheckErr(filterOutput.Close())
 	}
 
 }
