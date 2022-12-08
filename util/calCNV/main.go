@@ -9,6 +9,7 @@ import (
 	"github.com/liserjrqlxue/goUtil/textUtil"
 	"log"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -68,6 +69,21 @@ var (
 		"prefix",
 		"",
 		"output prefix",
+	)
+	filter = flag.Bool(
+		"filter",
+		false,
+		"output filter exon cnv",
+	)
+	thresholdCoverage = flag.Float64(
+		"coverage",
+		0.75,
+		"coverage threshold",
+	)
+	thresholdPercent = flag.Float64(
+		"percent",
+		75.0,
+		"percent threshold",
 	)
 )
 
@@ -135,6 +151,11 @@ func main() {
 
 	var output = osUtil.Create(*prefix + ".merge.txt")
 	defer simpleUtil.DeferClose(output)
+	var filterOutput *os.File
+	if *filter {
+		filterOutput = osUtil.Create(*prefix + ".merge.filter.txt")
+
+	}
 	fmtUtil.FprintStringArray(output, []string{"ID", "chr", "locStart", "locEnd", "numKark", "segMean", "ratio", "percent", "allAnno", "allCoverage", "anno", "coverage"}, "\t")
 	for _, info := range mergeInfo {
 		var (
@@ -180,6 +201,15 @@ func main() {
 			info.segMean, info.ratio, info.percent,
 			info.allAnno, info.allCoverage, info.anno, info.coverage,
 		)
+		if info.allCoverage >= *thresholdCoverage && info.percent >= *thresholdPercent {
+			fmtUtil.Fprintf(
+				filterOutput,
+				"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s\n",
+				info.ID, info.chr, info.locStart, info.locEnd, info.numMark,
+				info.segMean, info.ratio, info.percent,
+				info.allAnno, info.allCoverage, info.anno, info.coverage,
+			)
+		}
 	}
 }
 
