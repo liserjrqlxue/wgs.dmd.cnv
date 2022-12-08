@@ -5,8 +5,8 @@ import "fmt"
 type Info struct {
 	ID          string
 	chr         string
-	locStart    int
-	locEnd      int
+	start       int
+	end         int
 	numMark     int
 	segMean     float64
 	ratio       float64
@@ -24,7 +24,7 @@ type Info struct {
 func (info *Info) String() string {
 	return fmt.Sprintf(
 		"%s\t%s\t%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%.4f\t%s\t%.4f\t%s\t%s",
-		info.ID, info.chr, info.locStart, info.locEnd, info.numMark,
+		info.ID, info.chr, info.start, info.end, info.numMark,
 		info.segMean, info.ratio, info.factor, info.percent,
 		info.allAnno, info.allCoverage, info.anno, info.coverage,
 	)

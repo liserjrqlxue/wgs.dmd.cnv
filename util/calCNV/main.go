@@ -108,11 +108,11 @@ func main() {
 	)
 	for _, datum := range controlData {
 		var info = &Info{
-			chr:      datum["chromosome"],
-			locStart: stringsUtil.Atoi(datum["pos"]),
-			locEnd:   stringsUtil.Atoi(datum["pos"]),
-			numMark:  1,
-			factor:   stringsUtil.Atof(datum["mean"]),
+			chr:     datum["chromosome"],
+			start:   stringsUtil.Atoi(datum["pos"]),
+			end:     stringsUtil.Atoi(datum["pos"]),
+			numMark: 1,
+			factor:  stringsUtil.Atof(datum["mean"]),
 		}
 		factors = append(factors, info.factor)
 		controls = append(controls, info)
@@ -124,11 +124,11 @@ func main() {
 	var n = len(controls) / bin
 	for i := 0; i < n; i++ {
 		var info = &Info{
-			chr:      binControls[i*bin].chr,
-			locStart: binControls[i*bin].locStart,
-			locEnd:   binControls[(i+1)*bin-1].locEnd,
-			numMark:  bin,
-			factor:   math2.Mean(factors[i*bin : (i+1)*bin-1]),
+			chr:     binControls[i*bin].chr,
+			start:   binControls[i*bin].start,
+			end:     binControls[(i+1)*bin-1].end,
+			numMark: bin,
+			factor:  math2.Mean(factors[i*bin : (i+1)*bin-1]),
 		}
 		binControls = append(binControls, info)
 	}
@@ -137,14 +137,14 @@ func main() {
 	var cnvInfo []*Info
 	for _, datum := range cnaData {
 		var info = &Info{
-			ID:       datum["ID"],
-			chr:      datum["chr"],
-			locStart: stringsUtil.Atoi(datum["loc.start"]),
-			locEnd:   stringsUtil.Atoi(datum["loc.end"]),
-			numMark:  stringsUtil.Atoi(datum["num.mark"]),
-			segMean:  stringsUtil.Atof(datum["seg.mean"]),
-			ratio:    stringsUtil.Atof(datum["ratio"]),
-			percent:  stringsUtil.Atof(datum["percent"]),
+			ID:      datum["ID"],
+			chr:     datum["chr"],
+			start:   stringsUtil.Atoi(datum["loc.start"]),
+			end:     stringsUtil.Atoi(datum["loc.end"]),
+			numMark: stringsUtil.Atoi(datum["num.mark"]),
+			segMean: stringsUtil.Atof(datum["seg.mean"]),
+			ratio:   stringsUtil.Atof(datum["ratio"]),
+			percent: stringsUtil.Atof(datum["percent"]),
 		}
 		cnvInfo = append(cnvInfo, info)
 	}
@@ -177,7 +177,7 @@ func main() {
 		filterOutput = osUtil.Create(*prefix + ".merge.filter.txt")
 
 	}
-	fmtUtil.FprintStringArray(output, []string{"ID", "chr", "locStart", "locEnd", "numKark", "segMean", "ratio", "percent", "allAnno", "allCoverage", "anno", "coverage"}, "\t")
+	fmtUtil.FprintStringArray(output, []string{"ID", "chr", "start", "end", "numMark", "segMean", "ratio", "factor", "percent", "allAnno", "allCoverage", "anno", "coverage"}, "\t")
 	for _, info := range mergeInfo {
 		var (
 			exonLength    = 0
@@ -188,7 +188,7 @@ func main() {
 		// factor
 		var cnvFactors []float64
 		for _, binControl := range binControls {
-			if binControl.locStart <= info.locEnd && binControl.locEnd >= info.locStart {
+			if binControl.start <= info.end && binControl.end >= info.start {
 				cnvFactors = append(cnvFactors, binControl.factor)
 			}
 		}
@@ -196,17 +196,17 @@ func main() {
 
 		// exon info
 		for _, e := range exonInfo {
-			if e.start <= info.locEnd && e.end >= info.locStart {
+			if e.start <= info.end && e.end >= info.start {
 				info.annos = append(info.annos, e.exon)
 				var (
 					hitStart = e.start
 					hitEnd   = e.end
 				)
-				if hitStart < info.locStart {
-					hitStart = info.locStart
+				if hitStart < info.start {
+					hitStart = info.start
 				}
-				if hitEnd > info.locEnd {
-					hitEnd = info.locEnd
+				if hitEnd > info.end {
+					hitEnd = info.end
 				}
 				exonLength += e.end - e.start + 1
 				exonCnvLength += hitEnd - hitStart + 1
@@ -237,13 +237,13 @@ func main() {
 
 func mergeInfos(x, y *Info, gender string) *Info {
 	var info = &Info{
-		ID:       x.ID,
-		chr:      x.chr,
-		locStart: x.locStart,
-		locEnd:   y.locEnd,
-		numMark:  x.numMark + y.numMark,
-		ratio:    weightMean(x.ratio, y.ratio, x.numMark, y.numMark),
-		percent:  weightMean(x.percent, y.percent, x.numMark, y.numMark),
+		ID:      x.ID,
+		chr:     x.chr,
+		start:   x.start,
+		end:     y.end,
+		numMark: x.numMark + y.numMark,
+		ratio:   weightMean(x.ratio, y.ratio, x.numMark, y.numMark),
+		percent: weightMean(x.percent, y.percent, x.numMark, y.numMark),
 	}
 	if gender == "M" {
 		info.percent = math.Abs(info.ratio-1) * 100
