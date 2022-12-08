@@ -30,6 +30,11 @@ var (
 		"",
 		"cnv result",
 	)
+	depth = flag.String(
+		"depth",
+		"",
+		"depth file",
+	)
 	gender = flag.String(
 		"gender",
 		"",
@@ -61,7 +66,7 @@ var (
 		75.0,
 		"percent threshold",
 	)
-	exon = flag.String(
+	exons = flag.String(
 		"exon",
 		filepath.Join(etcPath, "exon.info.txt"),
 		"exon info",
@@ -84,10 +89,46 @@ func main() {
 		*prefix = *cna
 	}
 
-	var bin = *width
+	var (
+		controlData, _ = textUtil.File2MapArray(*control, "\t", nil)
+		cnaData, _     = textUtil.File2MapArray(*cna, "\t", nil)
 
-	var exonInfo []*Exon
-	for _, str := range textUtil.File2Slice(*exon, "\t") {
+		exonInfo    []*Exon
+		controls    []*Info
+		binControls []*Info
+		depthInfo   []*Info
+		binInfo     []*Info
+		cnvInfo     []*Info
+
+		depths  []float64
+		factors []float64
+		bin     = *width
+		n       int
+	)
+
+	for _, str := range textUtil.File2Slice(*depth, "\t") {
+		var info = &Info{
+			chr:   str[0],
+			start: stringsUtil.Atoi(str[1]),
+			end:   stringsUtil.Atoi(str[1]),
+			depth: stringsUtil.Atof(str[2]),
+		}
+		depthInfo = append(depthInfo, info)
+		depths = append(depths, info.depth)
+	}
+	n = len(depthInfo) / bin
+	for i := 0; i < n; i++ {
+		var info = &Info{
+			chr:     depthInfo[i*bin].chr,
+			start:   depthInfo[i*bin].start,
+			end:     depthInfo[(i+1)*bin-1].end,
+			numMark: bin,
+			depth:   math2.Mean(depths[i*bin : (i+1)*bin-1]),
+		}
+		binInfo = append(binInfo, info)
+	}
+
+	for _, str := range textUtil.File2Slice(*exons, "\t") {
 		var exon = &Exon{
 			chr:    str[0],
 			start:  stringsUtil.Atoi(str[1]) + 1,
@@ -101,11 +142,6 @@ func main() {
 		exonInfo = append(exonInfo, exon)
 	}
 
-	var controlData, _ = textUtil.File2MapArray(*control, "\t", nil)
-	var (
-		controls []*Info
-		factors  []float64
-	)
 	for _, datum := range controlData {
 		var info = &Info{
 			chr:     datum["chromosome"],
@@ -118,10 +154,7 @@ func main() {
 		controls = append(controls, info)
 	}
 
-	var (
-		binControls []*Info
-	)
-	var n = len(controls) / bin
+	n = len(controls) / bin
 	for i := 0; i < n; i++ {
 		var info = &Info{
 			chr:     binControls[i*bin].chr,
@@ -133,8 +166,6 @@ func main() {
 		binControls = append(binControls, info)
 	}
 
-	var cnaData, _ = textUtil.File2MapArray(*cna, "\t", nil)
-	var cnvInfo []*Info
 	for _, datum := range cnaData {
 		var info = &Info{
 			ID:      datum["ID"],
@@ -176,7 +207,11 @@ func main() {
 		filterOutput = osUtil.Create(*prefix + ".merge.filter.txt")
 
 	}
-	fmtUtil.FprintStringArray(output, []string{"ID", "chr", "start", "end", "numMark", "segMean", "ratio", "factor", "percent", "allAnno", "allCoverage", "anno", "coverage"}, "\t")
+	fmtUtil.FprintStringArray(output, infoTitle, "\t")
+	if *filter {
+		fmtUtil.FprintStringArray(filterOutput, infoTitle, "\t")
+	}
+
 	for _, info := range mergeInfo {
 		var (
 			exonLength    = 0
@@ -188,12 +223,21 @@ func main() {
 
 		// factor
 		var cnvFactors []float64
-		for _, binControl := range binControls {
-			if binControl.start <= info.end && binControl.end >= info.start {
-				cnvFactors = append(cnvFactors, binControl.factor)
+		for _, info2 := range binControls {
+			if info2.start <= info.end && info2.end >= info.start {
+				cnvFactors = append(cnvFactors, info2.factor)
 			}
 		}
 		info.factor = math2.Mean(cnvFactors)
+
+		// depth
+		var cnvDepths []float64
+		for _, info2 := range binInfo {
+			if info2.start <= info.end && info2.end >= info.start {
+				cnvDepths = append(cnvDepths, info2.depth)
+			}
+		}
+		info.depth = math2.Mean(cnvDepths)
 
 		// exon info
 		for _, e := range exonInfo {
