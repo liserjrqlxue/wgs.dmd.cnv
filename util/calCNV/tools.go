@@ -262,6 +262,9 @@ func reCalRatio(info *Info, rawInfos []*Info, qc *QC) {
 		if info2.start <= info.end && info2.end >= info.start {
 			cnvDepths = append(cnvDepths, info2.depth)
 			cnvFactors = append(cnvFactors, info2.factor)
+			if info.end < info2.end {
+				info.end = info2.end
+			}
 		}
 	}
 	info.depth = math2.Mean(cnvDepths)
