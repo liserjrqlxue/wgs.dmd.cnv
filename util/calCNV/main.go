@@ -98,6 +98,7 @@ func main() {
 
 	var qc = &QC{
 		ID:       *id,
+		gender:   *gender,
 		depthX:   *depthX,
 		binWidth: *width,
 	}
@@ -127,7 +128,7 @@ func main() {
 	var depthInfo = bam2depth(*bam, outputDepth, *region, *control, qc, skipDepth)
 	var binInfo = depth2bin(depthInfo, qc)
 	var cnvInfo = bin2cnv(binInfo, outputBin, outputCNV, skipDNAcopy)
-	var mergeInfo = mergeCNV(cnvInfo)
+	var mergeInfo = mergeCNV(cnvInfo, qc)
 
 	annotateInfos(mergeInfo, binInfo, exonInfo, qc)
 	writeInfos(mergeInfo, outputMerge)

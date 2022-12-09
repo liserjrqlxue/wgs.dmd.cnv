@@ -6,6 +6,7 @@ import (
 
 type QC struct {
 	ID         string
+	gender     string
 	binWidth   int
 	depthX     float64
 	ratioCV    float64

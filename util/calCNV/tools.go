@@ -196,7 +196,8 @@ func runDNAcopy(input, output string) {
 	simpleUtil.CheckErr(DNAcopy.Run())
 }
 
-func mergeCNV(cnvInfos []*Info) (mergeCnvInfos []*Info) {
+func mergeCNV(cnvInfos []*Info, qc *QC) (mergeCnvInfos []*Info) {
+	var gender = qc.gender
 	var i2 = 0 // 下一个
 	for i, info := range cnvInfos {
 		if i < i2 {
@@ -207,8 +208,8 @@ func mergeCNV(cnvInfos []*Info) (mergeCnvInfos []*Info) {
 			continue
 		}
 		i2 = i + 1
-		for isSameLevel(info.ratio, cnvInfos[i2].ratio, *gender) {
-			info = mergeInfos(info, cnvInfos[i2], *gender)
+		for isSameLevel(info.ratio, cnvInfos[i2].ratio, gender) {
+			info = mergeInfos(info, cnvInfos[i2])
 			i2 = i2 + 1
 			if i2 >= len(cnvInfos) {
 				break
@@ -236,6 +237,11 @@ func filterInfos(infos []*Info, coverage, percent float64) (filterInfos []*Info)
 
 func annotateInfo(info *Info, rawInfos []*Info, exonInfos []*Exon, qc *QC) {
 	info.ID = qc.ID
+	if qc.gender == "M" {
+		info.percent = math.Abs(info.ratio-1) * 100
+	} else {
+		info.percent = math.Abs(info.ratio-1) * 200
+	}
 	info.percent = math.Min(info.percent, 100)
 
 	// depth + factor + ratio
@@ -305,7 +311,7 @@ func annoteateExon(info *Info, exonInfos []*Exon) {
 	}
 }
 
-func mergeInfos(x, y *Info, gender string) *Info {
+func mergeInfos(x, y *Info) *Info {
 	var info = &Info{
 		ID:      x.ID,
 		chr:     x.chr,
@@ -313,12 +319,6 @@ func mergeInfos(x, y *Info, gender string) *Info {
 		end:     y.end,
 		numMark: x.numMark + y.numMark,
 		ratio:   weightMean(x.ratio, y.ratio, x.numMark, y.numMark),
-		percent: weightMean(x.percent, y.percent, x.numMark, y.numMark),
-	}
-	if gender == "M" {
-		info.percent = math.Abs(info.ratio-1) * 100
-	} else {
-		info.percent = math.Abs(info.ratio-1) * 200
 	}
 	info.segMean = math.Log2(info.ratio)
 	return info
