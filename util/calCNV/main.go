@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -20,11 +21,17 @@ import (
 var (
 	ex, _   = os.Executable()
 	exPath  = filepath.Dir(ex)
+	binPath = filepath.Join(exPath, "..", "..", "bin")
 	etcPath = filepath.Join(exPath, "..", "..", "etc")
 )
 
 // flag
 var (
+	id = flag.String(
+		"id",
+		"",
+		"sampleID",
+	)
 	cna = flag.String(
 		"cna",
 		"",
@@ -91,25 +98,33 @@ func main() {
 	}
 
 	if *prefix == "" {
-		*prefix = *cna
+		*prefix = *cna + ".bin" + strconv.Itoa(*width)
 	}
+
+	var fileList = make(map[string]*os.File)
+	fileList["QC"] = osUtil.Create(*prefix + ".QC.txt")
 
 	var (
 		depthData      = textUtil.File2Slice(*depth, "\t")
 		controlData, _ = textUtil.File2MapArray(*control, "\t", nil)
-		cnaData, _     = textUtil.File2MapArray(*cna, "\t", nil)
 
 		exonInfo  []*Exon
 		depthInfo []*Info
 		binInfo   []*Info
 		cnvInfo   []*Info
 
-		depths      []float64
-		factors     []float64
-		depthRatios []float64
-		fixRatios   []float64
-		bin         = *width
-		n           int
+		depths       []float64
+		factors      []float64
+		depthRatios  []float64
+		fixRatios    []float64
+		binRatios    []float64
+		binFixRatios []float64
+
+		qc = &QC{
+			ID:       *id,
+			depthX:   *depthX,
+			binWidth: *width,
+		}
 	)
 
 	if len(depthData) != len(controlData) {
@@ -125,7 +140,7 @@ func main() {
 			depth:   stringsUtil.Atof(str[2]),
 			factor:  stringsUtil.Atof(controlData[i]["mean"]),
 		}
-		info.depthRatio = info.depth / *depthX
+		info.depthRatio = info.depth / qc.depthX
 		info.fixRatio = info.depthRatio / info.factor
 
 		depths = append(depths, info.depth)
@@ -136,20 +151,56 @@ func main() {
 		depthInfo = append(depthInfo, info)
 	}
 
-	n = len(depthInfo) / bin
+	var depthRatioMean, depthRatioSD = math2.MeanStdDev(depthRatios)
+	var fixRatioMean, fixRatioSD = math2.MeanStdDev(fixRatios)
+	qc.ratioCV = depthRatioSD / depthRatioMean
+	qc.fixCV = fixRatioSD / fixRatioMean
+
+	var binOutput = osUtil.Create(*prefix + ".txt")
+	fmtUtil.FprintStringArray(binOutput, infoTitle, "\t")
+
+	var n = len(depthInfo) / qc.binWidth
 	for i := 0; i < n; i++ {
+		var (
+			s = i * qc.binWidth
+			e = s + qc.binWidth - 1
+		)
 		var info = &Info{
-			chr:        depthInfo[i*bin].chr,
-			start:      depthInfo[i*bin].start,
-			end:        depthInfo[(i+1)*bin-1].end,
-			numMark:    bin,
-			depth:      math2.Mean(depths[i*bin : (i+1)*bin-1]),
-			factor:     math2.Mean(factors[i*bin : (i+1)*bin-1]),
-			depthRatio: math2.Mean(depthRatios[i*bin : (i+1)*bin-1]),
-			fixRatio:   math2.Mean(fixRatios[i*bin : (i+1)*bin-1]),
+			chr:        depthInfo[s].chr,
+			start:      depthInfo[s].start,
+			end:        depthInfo[e].end,
+			numMark:    qc.binWidth,
+			depth:      math2.Mean(depths[s:e]),
+			factor:     math2.Mean(factors[s:e]),
+			depthRatio: math2.Mean(depthRatios[s:e]),
+			fixRatio:   math2.Mean(fixRatios[s:e]),
 		}
+
+		binRatios = append(binRatios, info.depthRatio)
+		binFixRatios = append(binRatios, info.fixRatio)
+
 		binInfo = append(binInfo, info)
+
+		fmtUtil.Fprintln(binOutput, info.String())
 	}
+	simpleUtil.CheckErr(binOutput.Close())
+
+	var binRatioMean, binRatioSD = math2.MeanStdDev(binRatios)
+	var binFixRatioMean, binFixRatioSD = math2.MeanStdDev(binFixRatios)
+	qc.binRatioCV = binRatioSD / binRatioMean
+	qc.binFixCV = binFixRatioSD / binFixRatioMean
+
+	var DNAcopy = exec.Command(
+		"Rscript",
+		filepath.Join(binPath, "dmd.cnv.cal.R"),
+		qc.ID,
+		*prefix+".txt",
+		*cna,
+	)
+	log.Println(DNAcopy.String())
+	DNAcopy.Stdout = os.Stdout
+	DNAcopy.Stderr = os.Stderr
+	simpleUtil.CheckErr(DNAcopy.Run())
 
 	for _, str := range textUtil.File2Slice(*exons, "\t") {
 		var exon = &Exon{
@@ -165,6 +216,7 @@ func main() {
 		exonInfo = append(exonInfo, exon)
 	}
 
+	var cnaData, _ = textUtil.File2MapArray(*cna, "\t", nil)
 	for _, datum := range cnaData {
 		var info = &Info{
 			ID:      datum["ID"],
@@ -231,7 +283,7 @@ func main() {
 		info.depth = math2.Mean(cnvDepths)
 		info.factor = math2.Mean(cnvFactors)
 
-		info.depthRatio = info.depth / *depthX
+		info.depthRatio = info.depth / qc.depthX
 		info.fixRatio = info.depthRatio / info.factor
 
 		// exon info
@@ -273,9 +325,16 @@ func main() {
 		}
 	}
 
+	log.Println("write QC")
+	fmtUtil.FprintStringArray(fileList["QC"], qcTitle, "\t")
+	fmtUtil.Fprintln(fileList["QC"], qc.String())
+
 	simpleUtil.DeferClose(output)
 	if *filter {
 		simpleUtil.CheckErr(filterOutput.Close())
+	}
+	for _, file := range fileList {
+		simpleUtil.CheckErr(file.Close())
 	}
 
 }

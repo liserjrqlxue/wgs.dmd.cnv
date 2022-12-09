@@ -4,6 +4,39 @@ import (
 	"fmt"
 )
 
+type QC struct {
+	ID         string
+	binWidth   int
+	depthX     float64
+	ratioCV    float64
+	fixCV      float64
+	binRatioCV float64
+	binFixCV   float64
+}
+
+var qcTitle = []string{
+	"ID",
+	"binWdith",
+	"depthX",
+	"ratioCV",
+	"fixCV",
+	"binRatioCV",
+	"binFixCV",
+}
+
+func (qc *QC) String() string {
+	return fmt.Sprintf(
+		"%s\t%d\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
+		qc.ID,
+		qc.binWidth,
+		qc.depthX,
+		qc.ratioCV,
+		qc.fixCV,
+		qc.binRatioCV,
+		qc.binFixCV,
+	)
+}
+
 type Info struct {
 	ID          string
 	chr         string
