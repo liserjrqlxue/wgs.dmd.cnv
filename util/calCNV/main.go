@@ -87,7 +87,7 @@ var (
 
 func main() {
 	flag.Parse()
-	if *bam == "" || *prefix == "" {
+	if *bam == "" && *prefix == "" {
 		flag.Usage()
 		log.Fatalln("-bam or -prefix required!")
 	}
