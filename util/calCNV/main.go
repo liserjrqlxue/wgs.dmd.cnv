@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/liserjrqlxue/goUtil/osUtil"
 	"log"
 	"os"
 	"path/filepath"
@@ -22,10 +23,10 @@ var (
 		"",
 		"sampleID",
 	)
-	depth = flag.String(
-		"depth",
+	bam = flag.String(
+		"bam",
 		"",
-		"depth file",
+		"bam file",
 	)
 	gender = flag.String(
 		"gender",
@@ -43,10 +44,19 @@ var (
 		"output prefix",
 	)
 	// config
+	skip = flag.Bool(
+		"skip",
+		false,
+		"")
 	filter = flag.Bool(
 		"filter",
 		false,
 		"output filter exon cnv",
+	)
+	region = flag.String(
+		"region",
+		"chrX:31000000-33500000",
+		"calculate region",
 	)
 	width = flag.Int(
 		"width",
@@ -77,13 +87,13 @@ var (
 
 func main() {
 	flag.Parse()
-	if *depth == "" {
+	if *bam == "" || *prefix == "" {
 		flag.Usage()
-		log.Fatalln("-cna required!")
+		log.Fatalln("-bam or -prefix required!")
 	}
 
 	if *prefix == "" {
-		*prefix = *depth
+		*prefix = *bam
 	}
 
 	var qc = &QC{
@@ -93,20 +103,39 @@ func main() {
 	}
 
 	// prepare
-	var exonInfo = loadExon(*exons)
+	var (
+		exonInfo     = loadExon(*exons)
+		outputDepth  = *prefix + ".DMD.depth.txt"
+		outputBin    = *prefix + ".DMD.Bin.txt"
+		outputCNV    = *prefix + ".DMD.CNV.txt"
+		outputMerge  = *prefix + ".DMD.merged.CNV.txt"
+		outputFilter = *prefix + ".DMD.filtered.CNV.txt"
+		outputQC     = *prefix + ".DMD.QC.txt"
+		skipDepth    = false
+		skipDNAcopy  = false
+	)
 
-	var depthInfo = loadDepth(*depth, *control, qc)
+	if *skip {
+		if osUtil.FileExists(outputCNV) {
+			skipDNAcopy = true
+		}
+		if osUtil.FileExists(outputDepth) {
+			skipDepth = true
+		}
+	}
+
+	var depthInfo = bam2depth(*bam, outputDepth, *region, *control, qc, skipDepth)
 	var binInfo = depth2bin(depthInfo, qc)
-	var cnvInfo = bin2cnv(binInfo, *prefix)
+	var cnvInfo = bin2cnv(binInfo, outputBin, outputCNV, skipDNAcopy)
 	var mergeInfo = mergeCNV(cnvInfo)
 
 	annotateInfos(mergeInfo, binInfo, exonInfo, qc)
-	writeInfos(mergeInfo, *prefix+".merged.CNV.txt")
+	writeInfos(mergeInfo, outputMerge)
 	if *filter {
 		var filterInfo = filterInfos(mergeInfo, *thresholdCoverage, *thresholdPercent)
-		writeInfos(filterInfo, *prefix+".filtered.CNV.txt")
+		writeInfos(filterInfo, outputFilter)
 	}
 
-	writeQC(qc, *prefix+".QC.txt")
+	writeQC(qc, outputQC)
 
 }

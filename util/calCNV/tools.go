@@ -101,6 +101,29 @@ func writeQC(qc *QC, path string) {
 	simpleUtil.CheckErr(file.Close())
 }
 
+func bam2depth(bam, depth, region, control string, qc *QC, skip bool) (depthInfos []*Info) {
+	if !skip {
+		samtoolsDepth(region, depth, bam)
+	}
+	return loadDepth(depth, control, qc)
+}
+
+// samtools depth -aa -r $region -o $output $bam
+func samtoolsDepth(region, output, bam string) {
+	var cmd = exec.Command(
+		"samtools",
+		"depth",
+		"-aa",
+		"-r", region,
+		"-o", output,
+		bam,
+	)
+	log.Println(cmd.String())
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	simpleUtil.CheckErr(cmd.Run())
+}
+
 // depthInfos to binInfos, and update qc
 func depth2bin(depthInfos []*Info, qc *QC) (binInfos []*Info) {
 	var (
@@ -153,10 +176,12 @@ func depth2bin(depthInfos []*Info, qc *QC) (binInfos []*Info) {
 	return
 }
 
-func bin2cnv(infos []*Info, prefix string) (cnvInfos []*Info) {
-	writeInfos(infos, prefix+".Bin.txt")
-	runDNAcopy(prefix+".Bin.txt", prefix+".CNV.txt")
-	return loadCNA(prefix + ".CNV.txt")
+func bin2cnv(infos []*Info, outputBin, outputCNV string, skip bool) (cnvInfos []*Info) {
+	writeInfos(infos, outputBin)
+	if !skip {
+		runDNAcopy(outputBin, outputCNV)
+	}
+	return loadCNA(outputCNV)
 }
 
 func runDNAcopy(input, output string) {
