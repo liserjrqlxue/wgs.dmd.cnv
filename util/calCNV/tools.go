@@ -67,14 +67,13 @@ func loadCNA(file string) (cnvInfos []*Info) {
 	var cnaData, _ = textUtil.File2MapArray(file, "\t", nil)
 	for _, datum := range cnaData {
 		var info = &Info{
-			ID:      datum["ID"],
 			chr:     datum["chrom"],
 			start:   stringsUtil.Atoi(datum["loc.start"]),
 			end:     stringsUtil.Atoi(datum["loc.end"]),
 			numMark: stringsUtil.Atoi(datum["num.mark"]),
 			segMean: stringsUtil.Atof(datum["seg.mean"]),
-			ratio:   stringsUtil.Atof(datum["ratio"]),
 		}
+		info.ratio = math.Pow(2, info.segMean)
 		cnvInfos = append(cnvInfos, info)
 	}
 
@@ -106,6 +105,7 @@ func writeQC(qc *QC, path string) {
 func depth2bin(depthInfos []*Info, qc *QC) (binInfos []*Info) {
 	var (
 		binWidth = qc.binWidth
+		ID       = qc.ID
 
 		depths       []float64
 		factors      []float64
@@ -129,6 +129,7 @@ func depth2bin(depthInfos []*Info, qc *QC) (binInfos []*Info) {
 			e = s + binWidth - 1
 		)
 		var info = &Info{
+			ID:         ID,
 			chr:        depthInfos[s].chr,
 			start:      depthInfos[s].start,
 			end:        depthInfos[e].end,
@@ -152,17 +153,17 @@ func depth2bin(depthInfos []*Info, qc *QC) (binInfos []*Info) {
 	return
 }
 
-func bin2cnv(infos []*Info, prefix string, qc *QC) (cnvInfos []*Info) {
+func bin2cnv(infos []*Info, prefix string) (cnvInfos []*Info) {
 	writeInfos(infos, prefix+".Bin.txt")
-	runDNAcopy(prefix+".Bin.txt", prefix+".CNV.txt", qc)
-	return loadCNA(prefix + ".CNA.txt")
+	runDNAcopy(prefix+".Bin.txt", prefix+".CNV.txt")
+	return loadCNA(prefix + ".CNV.txt")
 }
 
-func runDNAcopy(input, output string, qc *QC) {
+func runDNAcopy(input, output string) {
 	var DNAcopy = exec.Command(
 		"Rscript",
 		filepath.Join(binPath, "dmd.cnv.cal.R"),
-		qc.ID, input, output,
+		input, output,
 	)
 	log.Println(DNAcopy.String())
 	DNAcopy.Stdout = os.Stdout
@@ -209,6 +210,7 @@ func filterInfos(infos []*Info, coverage, percent float64) (filterInfos []*Info)
 }
 
 func annotateInfo(info *Info, rawInfos []*Info, exonInfos []*Exon, qc *QC) {
+	info.ID = qc.ID
 	info.percent = math.Min(info.percent, 100)
 
 	// depth + factor + ratio

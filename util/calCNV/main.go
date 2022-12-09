@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 )
 
 // os
@@ -84,7 +83,7 @@ func main() {
 	}
 
 	if *prefix == "" {
-		*prefix = *depth + ".bin" + strconv.Itoa(*width)
+		*prefix = *depth
 	}
 
 	var qc = &QC{
@@ -98,7 +97,7 @@ func main() {
 
 	var depthInfo = loadDepth(*depth, *control, qc)
 	var binInfo = depth2bin(depthInfo, qc)
-	var cnvInfo = bin2cnv(binInfo, *prefix, qc)
+	var cnvInfo = bin2cnv(binInfo, *prefix)
 	var mergeInfo = mergeCNV(cnvInfo)
 
 	annotateInfos(mergeInfo, binInfo, exonInfo, qc)
