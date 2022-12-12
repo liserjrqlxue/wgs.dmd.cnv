@@ -2,10 +2,13 @@ package main
 
 import (
 	"flag"
-	"github.com/liserjrqlxue/goUtil/osUtil"
 	"log"
 	"os"
 	"path/filepath"
+
+	"wgsDmdCnv/util"
+
+	"github.com/liserjrqlxue/goUtil/osUtil"
 )
 
 // os
@@ -47,7 +50,8 @@ var (
 	skip = flag.Bool(
 		"skip",
 		false,
-		"")
+		"",
+	)
 	filter = flag.Bool(
 		"filter",
 		false,
@@ -96,16 +100,17 @@ func main() {
 		*prefix = *bam
 	}
 
-	var qc = &QC{
+	var qc = &util.QC{
 		ID:       *id,
-		gender:   *gender,
-		depthX:   *depthX,
-		binWidth: *width,
+		Gender:   *gender,
+		DepthX:   *depthX,
+		BinWidth: *width,
 	}
 
 	// prepare
 	var (
-		exonInfo     = loadExon(*exons)
+		exonInfo     = util.LoadExon(*exons)
+		rScript      = filepath.Join(binPath, "dmd.cnv.cal.R")
 		outputDepth  = *prefix + ".DMD.depth.txt"
 		outputBin    = *prefix + ".DMD.Bin.txt"
 		outputCNV    = *prefix + ".DMD.CNV.txt"
@@ -125,18 +130,17 @@ func main() {
 		}
 	}
 
-	var depthInfo = bam2depth(*bam, outputDepth, *region, *control, qc, skipDepth)
-	var binInfo = depth2bin(depthInfo, qc)
-	var cnvInfo = bin2cnv(binInfo, outputBin, outputCNV, skipDNAcopy)
-	var mergeInfo = mergeCNV(cnvInfo, qc)
+	var depthInfo = util.Bam2depth(*bam, outputDepth, *region, *control, qc, skipDepth)
+	var binInfo = util.Depth2bin(depthInfo, qc)
+	var cnvInfo = util.Bin2cnv(binInfo, outputBin, outputCNV, rScript, skipDNAcopy)
+	var mergeInfo = util.MergeCNV(cnvInfo, qc)
 
-	annotateInfos(mergeInfo, binInfo, exonInfo, qc)
-	writeInfos(mergeInfo, outputMerge)
+	util.AnnotateInfos(mergeInfo, binInfo, exonInfo, qc)
+	util.WriteInfos(mergeInfo, outputMerge)
 	if *filter {
-		var filterInfo = filterInfos(mergeInfo, *thresholdCoverage, *thresholdPercent)
-		writeInfos(filterInfo, outputFilter)
+		var filterInfo = util.FilterInfos(mergeInfo, *thresholdCoverage, *thresholdPercent)
+		util.WriteInfos(filterInfo, outputFilter)
 	}
 
-	writeQC(qc, outputQC)
-
+	util.WriteQC(qc, outputQC)
 }

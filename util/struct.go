@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"fmt"
@@ -6,9 +6,9 @@ import (
 
 type QC struct {
 	ID         string
-	gender     string
-	binWidth   int
-	depthX     float64
+	Gender     string
+	BinWidth   int
+	DepthX     float64
 	ratioCV    float64
 	fixCV      float64
 	binRatioCV float64
@@ -18,7 +18,7 @@ type QC struct {
 var qcTitle = []string{
 	"ID",
 	"binWdith",
-	"depthX",
+	"DepthX",
 	"ratioCV",
 	"fixCV",
 	"binRatioCV",
@@ -29,8 +29,8 @@ func (qc *QC) String() string {
 	return fmt.Sprintf(
 		"%s\t%d\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
 		qc.ID,
-		qc.binWidth,
-		qc.depthX,
+		qc.BinWidth,
+		qc.DepthX,
 		qc.ratioCV,
 		qc.fixCV,
 		qc.binRatioCV,
@@ -58,6 +58,8 @@ type Info struct {
 
 	annos     []string
 	coverages []float64
+
+	raw map[string]string
 }
 
 var infoTitle = []string{

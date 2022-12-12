@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"github.com/liserjrqlxue/goUtil/fmtUtil"
@@ -11,7 +11,6 @@ import (
 	"math"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -19,7 +18,7 @@ import (
 // INPUT
 
 // load exon info to exonInfos
-func loadExon(file string) (exonInfos []*Exon) {
+func LoadExon(file string) (exonInfos []*Exon) {
 	for _, str := range textUtil.File2Slice(file, "\t") {
 		var exon = &Exon{
 			chr:    str[0],
@@ -42,7 +41,7 @@ func loadDepth(depth, control string, qc *QC) (depthInfos []*Info) {
 	var (
 		depthData      = textUtil.File2Slice(depth, "\t")
 		controlData, _ = textUtil.File2MapArray(control, "\t", nil)
-		xDepth         = qc.depthX
+		xDepth         = qc.DepthX
 	)
 
 	for i, str := range depthData {
@@ -83,7 +82,7 @@ func loadCNA(file string) (cnvInfos []*Info) {
 // OUTPUT
 
 // write []*Info to file
-func writeInfos(infos []*Info, path string) {
+func WriteInfos(infos []*Info, path string) {
 	var file = osUtil.Create(path)
 	fmtUtil.FprintStringArray(file, infoTitle, "\t")
 	for _, info := range infos {
@@ -93,7 +92,7 @@ func writeInfos(infos []*Info, path string) {
 }
 
 // write *QC to file
-func writeQC(qc *QC, path string) {
+func WriteQC(qc *QC, path string) {
 	log.Println("write QC")
 	var file = osUtil.Create(path)
 	fmtUtil.FprintStringArray(file, qcTitle, "\t")
@@ -101,7 +100,7 @@ func writeQC(qc *QC, path string) {
 	simpleUtil.CheckErr(file.Close())
 }
 
-func bam2depth(bam, depth, region, control string, qc *QC, skip bool) (depthInfos []*Info) {
+func Bam2depth(bam, depth, region, control string, qc *QC, skip bool) (depthInfos []*Info) {
 	if !skip {
 		samtoolsDepth(region, depth, bam)
 	}
@@ -125,9 +124,9 @@ func samtoolsDepth(region, output, bam string) {
 }
 
 // depthInfos to binInfos, and update qc
-func depth2bin(depthInfos []*Info, qc *QC) (binInfos []*Info) {
+func Depth2bin(depthInfos []*Info, qc *QC) (binInfos []*Info) {
 	var (
-		binWidth = qc.binWidth
+		binWidth = qc.BinWidth
 		ID       = qc.ID
 
 		depths       []float64
@@ -176,18 +175,18 @@ func depth2bin(depthInfos []*Info, qc *QC) (binInfos []*Info) {
 	return
 }
 
-func bin2cnv(infos []*Info, outputBin, outputCNV string, skip bool) (cnvInfos []*Info) {
-	writeInfos(infos, outputBin)
+func Bin2cnv(infos []*Info, outputBin, outputCNV, rScript string, skip bool) (cnvInfos []*Info) {
+	WriteInfos(infos, outputBin)
 	if !skip {
-		runDNAcopy(outputBin, outputCNV)
+		runDNAcopy(outputBin, outputCNV, rScript)
 	}
 	return loadCNA(outputCNV)
 }
 
-func runDNAcopy(input, output string) {
+func runDNAcopy(input, output, rScript string) {
 	var DNAcopy = exec.Command(
 		"Rscript",
-		filepath.Join(binPath, "dmd.cnv.cal.R"),
+		rScript,
 		input, output,
 	)
 	log.Println(DNAcopy.String())
@@ -196,8 +195,8 @@ func runDNAcopy(input, output string) {
 	simpleUtil.CheckErr(DNAcopy.Run())
 }
 
-func mergeCNV(cnvInfos []*Info, qc *QC) (mergeCnvInfos []*Info) {
-	var gender = qc.gender
+func MergeCNV(cnvInfos []*Info, qc *QC) (mergeCnvInfos []*Info) {
+	var gender = qc.Gender
 	var i2 = 0 // 下一个
 	for i, info := range cnvInfos {
 		if i < i2 {
@@ -220,13 +219,13 @@ func mergeCNV(cnvInfos []*Info, qc *QC) (mergeCnvInfos []*Info) {
 	return
 }
 
-func annotateInfos(infos, rawInfos []*Info, exonInfos []*Exon, qc *QC) {
+func AnnotateInfos(infos, rawInfos []*Info, exonInfos []*Exon, qc *QC) {
 	for _, info := range infos {
 		annotateInfo(info, rawInfos, exonInfos, qc)
 	}
 }
 
-func filterInfos(infos []*Info, coverage, percent float64) (filterInfos []*Info) {
+func FilterInfos(infos []*Info, coverage, percent float64) (filterInfos []*Info) {
 	for _, info := range infos {
 		if info.allCoverage >= coverage && info.percent >= percent {
 			filterInfos = append(filterInfos, info)
@@ -237,7 +236,7 @@ func filterInfos(infos []*Info, coverage, percent float64) (filterInfos []*Info)
 
 func annotateInfo(info *Info, rawInfos []*Info, exonInfos []*Exon, qc *QC) {
 	info.ID = qc.ID
-	if qc.gender == "M" {
+	if qc.Gender == "M" {
 		info.percent = math.Abs(info.ratio-1) * 100
 	} else {
 		info.percent = math.Abs(info.ratio-1) * 200
@@ -253,7 +252,7 @@ func annotateInfo(info *Info, rawInfos []*Info, exonInfos []*Exon, qc *QC) {
 
 func reCalRatio(info *Info, rawInfos []*Info, qc *QC) {
 	var (
-		xDepth     = qc.depthX
+		xDepth     = qc.DepthX
 		cnvDepths  []float64
 		cnvFactors []float64
 	)
