@@ -4,9 +4,9 @@ set -x
 
 sampleID=$1
 workdir=$2
-outdir=${3:-$workdir/$sampleID}
+outdir=${3:-$workdir/$sampleID/CNV/cnvnator}
 
-export PATH=$(dirname $(readlink -e $0))/bin:$PATH
+export PATH=$(dirname $(readlink -e $0)):$PATH
 
 mkdir -p $outdir
 
