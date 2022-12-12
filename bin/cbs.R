@@ -7,7 +7,7 @@ a<-read.table(input,stringsAsFactors=T,sep="\t",fill=T,header=T)
 cna<-segment(
     smooth.CNA(
         CNA(
-            log2(a$fixRatio),
+            log2(a$fixRatio+0.00001),
             a$chr,
             a$start,
             data.type = "logratio",
