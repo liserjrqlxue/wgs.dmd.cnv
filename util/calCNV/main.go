@@ -62,6 +62,11 @@ var (
 		"chrX:31000000-33500000",
 		"calculate region",
 	)
+	segment = flag.String(
+		"segment",
+		filepath.Join(binPath, "cbs.R"),
+		"segment R script",
+	)
 	width = flag.Int(
 		"width",
 		50,
@@ -110,7 +115,6 @@ func main() {
 	// prepare
 	var (
 		exonInfo     = util.LoadExon(*exons)
-		rScript      = filepath.Join(binPath, "dmd.cnv.cal.R")
 		outputDepth  = *prefix + ".DMD.depth.txt"
 		outputBin    = *prefix + ".DMD.Bin.txt"
 		outputCNV    = *prefix + ".DMD.CNV.txt"
@@ -132,7 +136,7 @@ func main() {
 
 	var depthInfo = util.Bam2depth(*bam, outputDepth, *region, *control, qc, skipDepth)
 	var binInfo = util.Depth2bin(depthInfo, qc)
-	var cnvInfo = util.Bin2cnv(binInfo, outputBin, outputCNV, rScript, skipDNAcopy)
+	var cnvInfo = util.Bin2cnv(binInfo, outputBin, outputCNV, *segment, skipDNAcopy)
 	var mergeInfo = util.MergeCNV(cnvInfo, qc)
 
 	util.AnnotateInfos(mergeInfo, binInfo, exonInfo, qc)
