@@ -1,16 +1,20 @@
 package util
 
 import (
+	"bufio"
+	"fmt"
 	"github.com/liserjrqlxue/goUtil/fmtUtil"
 	math2 "github.com/liserjrqlxue/goUtil/math"
 	"github.com/liserjrqlxue/goUtil/osUtil"
 	"github.com/liserjrqlxue/goUtil/simpleUtil"
 	"github.com/liserjrqlxue/goUtil/stringsUtil"
 	"github.com/liserjrqlxue/goUtil/textUtil"
+	"io"
 	"log"
 	"math"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -79,6 +83,43 @@ func loadCNA(file string) (cnvInfos []*Info) {
 	return
 }
 
+// load wgs nator.step6 cnv result
+var isEX = regexp.MustCompile(`DMD_EX`)
+
+func LoadNatorStep6(path string) (cnvInfos []*Info, title []string) {
+	var file = osUtil.Open(path)
+	var buf = bufio.NewReader(file)
+	var line, err = buf.ReadString('\n')
+	simpleUtil.CheckErr(err)
+	title = strings.Split(strings.TrimSuffix(line, "\n"), "\t")
+	for err == nil {
+		line, err = buf.ReadString('\n')
+		if err != nil {
+			break
+		}
+		var datum = make(map[string]string)
+		for j, k := range strings.Split(line, "\t") {
+			datum[title[j]] = k
+		}
+		if isEX.MatchString(datum["OMIM_EX"]) {
+			var info = &Info{
+				ID:    datum["Sample"],
+				chr:   datum["Chr"],
+				start: stringsUtil.Atoi(datum["Start"]),
+				end:   stringsUtil.Atoi(datum["End"]),
+				ratio: stringsUtil.Atof(datum["normalized_RD"]),
+				raw:   datum,
+			}
+			cnvInfos = append(cnvInfos, info)
+		}
+	}
+	if err != io.EOF {
+		log.Fatalf("bufio.Reader.ReadString('\n') error:[%+v]", err)
+	}
+	simpleUtil.CheckErr(file.Close())
+	return
+}
+
 // OUTPUT
 
 // write []*Info to file
@@ -87,6 +128,24 @@ func WriteInfos(infos []*Info, path string) {
 	fmtUtil.FprintStringArray(file, infoTitle, "\t")
 	for _, info := range infos {
 		fmtUtil.Fprintln(file, info.String())
+	}
+	simpleUtil.CheckErr(file.Close())
+}
+
+// write []*Info to file
+func WriteCNV(infos []*Info, title []string, path string) {
+	var file = osUtil.Create(path)
+	fmtUtil.FprintStringArray(file, title, "\t")
+	for _, info := range infos {
+		info.raw["depth"] = float2str(info.depth)
+		info.raw["ratio"] = float2str(info.ratio)
+		info.raw["fixRatio"] = float2str(info.fixRatio)
+		info.raw["factor"] = float2str(info.factor)
+		var line []string
+		for _, s := range title {
+			line = append(line, info.raw[s])
+		}
+		fmtUtil.FprintStringArray(file, line, "\t")
 	}
 	simpleUtil.CheckErr(file.Close())
 }
@@ -379,4 +438,8 @@ func CalLevelM(ratio float64) int {
 	} else {
 		return 3
 	}
+}
+
+func float2str(f float64) string {
+	return fmt.Sprintf("%.4f", f)
 }
