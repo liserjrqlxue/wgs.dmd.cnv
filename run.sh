@@ -1,25 +1,19 @@
 #!/bin/bash
 set -e
+set -x
 
 sampleID=$1
-bam=$2
-outdir=${3:=test/$sampleID}
+workdir=$2
+outdir=${3:-$workdir/$sampleID}
 
-inputDir=$(dirname $(dirname $bam))
-sex=$inputDir/QC/sex.txt
-depth=$(cut -f 1 $sex)
-gender=$(cut -f 7 $sex)
+export PATH=$(dirname $(readlink -e $0))/bin:$PATH
 
 mkdir -p $outdir
 
-prefix=$outdir/$sampleID
+cnv=$workdir/$sampleID/CNV/cnvnator/$sampleID.nator.step6
+bam=$workdir/$sampleID/bam_chr/$sampleID.final.merge.bam
+sex=$workdir/$sampleID/QC/sex.txt
+depthX=$(cut -f 1 $sex)
+gender=$(cut -f 7 $sex)
 
-region="chrX:31000000-33500000"
-
-
-samtools depth -aa -r $region -o $prefix.DMD.depth.txt $bam
-
-conda activate r
-
-
-\time -v Rscript dmd.cnv.cal.R $sampleID $gender $depth $prefix.DMD.depth.txt $outdir
+\time -v filterCNV -cnv $cnv -bam $bam -depthX $depthX -gender $gender -id $sampleID -prefix $outdir/$sampleID -skip
