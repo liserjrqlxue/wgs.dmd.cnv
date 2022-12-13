@@ -69,6 +69,11 @@ var (
 		filepath.Join(etcPath, "control.txt"),
 		"control to correct ratio",
 	)
+	percentThreshold = flag.Float64(
+		"percent",
+		50,
+		"percent threshold",
+	)
 )
 
 func main() {
@@ -96,9 +101,10 @@ func main() {
 
 	// prepare
 	var (
-		outputDepth = *prefix + ".DMD.depth.txt"
-		outputCNV   = *prefix + ".DMD.CNV.txt"
-		skipDepth   = false
+		outputDepth     = *prefix + ".DMD.depth.txt"
+		outputCNV       = *prefix + ".DMD.CNV.txt"
+		outputFilterCNV = *prefix + ".DMD.CNV.filtered.txt"
+		skipDepth       = false
 	)
 
 	if *skip {
@@ -111,8 +117,14 @@ func main() {
 	var cnvInfo, title = util.LoadNatorStep6(*cnv)
 	log.Println("load depth")
 	var depthInfo = util.Bam2depth(*bam, outputDepth, *region, *control, qc, skipDepth)
+	log.Println("annotate cnv")
 	util.AnnotateInfos(cnvInfo, depthInfo, nil, qc)
+	log.Println("filter cnv")
+	var filterInfo = util.FilterInfos(cnvInfo, -1, *percentThreshold)
 
+	log.Println("write cnv")
 	title = append(title, "depth", "ratio", "fixRatio", "factor")
 	util.WriteCNV(cnvInfo, title, outputCNV)
+	util.WriteCNV(filterInfo, title, outputFilterCNV)
+	log.Println("all done")
 }
