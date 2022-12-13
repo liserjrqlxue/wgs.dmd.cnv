@@ -16,4 +16,4 @@ sex=$workdir/$sampleID/QC/sex.txt
 depthX=$(cut -f 1 $sex)
 gender=$(cut -f 7 $sex)
 
-\time -v filterCNV -cnv $cnv -bam $bam -depthX $depthX -gender $gender -id $sampleID -prefix $outdir/$sampleID -skip
+\time -v filterCNV  -depthX $depthX -gender "$gender" -id $sampleID -prefix $outdir/$sampleID -cnv $cnv -bam $bam -skip
