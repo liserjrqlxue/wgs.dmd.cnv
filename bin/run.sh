@@ -4,13 +4,13 @@ set -x
 
 sampleID=$1
 workdir=$2
-outdir=${3:-$workdir/$sampleID/CNV/cnvnator}
+cnv={3:-$workdir/$sampleID/CNV/cnvnator/$sampleID.nator.step6}
+outdir=${4:-$workdir/$sampleID/CNV/cnvnator}
 
 export PATH=$(dirname $(readlink -e $0)):$PATH
 
 mkdir -p $outdir
 
-cnv=$workdir/$sampleID/CNV/cnvnator/$sampleID.nator.step6
 bam=$workdir/$sampleID/bam_chr/$sampleID.final.merge.bam
 sex=$workdir/$sampleID/QC/sex.txt
 depthX=$(cut -f 1 $sex)
