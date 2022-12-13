@@ -140,7 +140,7 @@ func (info *Info) CalRatio(depthX float64, rawInfos []*Info) {
 	info.fixRatio = info.depthRatio / info.factor
 }
 
-// AnnotateExons exon info -> anno and coverage
+// AnnotateExons Exon info -> anno and coverage
 func (info *Info) AnnotateExons(exonInfos []*Exon) {
 	var (
 		exonLength    = 0
@@ -179,6 +179,14 @@ func (info *Info) AnnotateExons(exonInfos []*Exon) {
 		info.coverage = strings.Join(coverages, ",")
 		info.allCoverage = float64(exonCnvLength) / float64(exonLength)
 	}
+}
+
+// UpdateInfo update info from QC, raw depth Info and Exon infos
+func (info *Info) UpdateInfo(rawInfos []*Info, exonInfos []*Exon, qc *QC) {
+	info.ID = qc.ID
+	info.CalRatio(qc.DepthX, rawInfos)
+	info.CalPercent(qc.Gender)
+	info.AnnotateExons(exonInfos)
 }
 
 type Exon struct {

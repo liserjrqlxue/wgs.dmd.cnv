@@ -20,7 +20,7 @@ import (
 
 // INPUT
 
-// load exon info to exonInfos
+// LoadExon load exon info to exonInfos
 func LoadExon(file string) (exonInfos []*Exon) {
 	for _, str := range textUtil.File2Slice(file, "\t") {
 		var exon = &Exon{
@@ -121,7 +121,7 @@ func LoadNatorStep6(path string) (cnvInfos []*Info, title []string) {
 
 // OUTPUT
 
-// write []*Info to file
+// WriteInfos write []*Info to file
 func WriteInfos(infos []*Info, path string) {
 	var file = osUtil.Create(path)
 	fmtUtil.FprintStringArray(file, infoTitle, "\t")
@@ -131,7 +131,7 @@ func WriteInfos(infos []*Info, path string) {
 	simpleUtil.CheckErr(file.Close())
 }
 
-// write []*Info to file
+// WriteCNV write []*Info to file
 func WriteCNV(infos []*Info, title []string, path string) {
 	var file = osUtil.Create(path)
 	fmtUtil.FprintStringArray(file, title, "\t")
@@ -279,7 +279,7 @@ func MergeCNV(cnvInfos []*Info, qc *QC) (mergeCnvInfos []*Info) {
 
 func AnnotateInfos(infos, rawInfos []*Info, exonInfos []*Exon, qc *QC) {
 	for _, info := range infos {
-		annotateInfo(info, rawInfos, exonInfos, qc)
+		info.UpdateInfo(rawInfos, exonInfos, qc)
 	}
 }
 
@@ -290,14 +290,6 @@ func FilterInfos(infos []*Info, coverage, percent float64) (filterInfos []*Info)
 		}
 	}
 	return
-}
-
-func annotateInfo(info *Info, rawInfos []*Info, exonInfos []*Exon, qc *QC) {
-	info.ID = qc.ID
-
-	info.CalRatio(qc.DepthX, rawInfos)
-	info.CalPercent(qc.Gender)
-	info.AnnotateExons(exonInfos)
 }
 
 func mergeInfos(x, y *Info) *Info {
