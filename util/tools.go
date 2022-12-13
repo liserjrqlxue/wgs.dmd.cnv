@@ -15,7 +15,6 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -295,81 +294,10 @@ func FilterInfos(infos []*Info, coverage, percent float64) (filterInfos []*Info)
 
 func annotateInfo(info *Info, rawInfos []*Info, exonInfos []*Exon, qc *QC) {
 	info.ID = qc.ID
-	if qc.Gender == "M" {
-		info.percent = math.Abs(info.ratio-1) * 100
-	} else {
-		info.percent = math.Abs(info.ratio-1) * 200
-	}
-	info.percent = math.Min(info.percent, 100)
 
-	// depth + factor + ratio
-	reCalRatio(info, rawInfos, qc)
-
-	// exon info -> anno and coverage
-	annoteateExon(info, exonInfos)
-}
-
-func reCalRatio(info *Info, rawInfos []*Info, qc *QC) {
-	var (
-		xDepth     = qc.DepthX
-		cnvDepths  []float64
-		cnvFactors []float64
-	)
-	// depth + factor
-	for _, info2 := range rawInfos {
-		if info2.start <= info.end && info2.end >= info.start {
-			cnvDepths = append(cnvDepths, info2.depth)
-			cnvFactors = append(cnvFactors, info2.factor)
-			if info.end < info2.end {
-				info.end = info2.end
-			}
-		}
-	}
-	info.depth = math2.Mean(cnvDepths)
-	info.factor = math2.Mean(cnvFactors)
-
-	info.depthRatio = info.depth / xDepth
-	info.fixRatio = info.depthRatio / info.factor
-}
-
-func annoteateExon(info *Info, exonInfos []*Exon) {
-	var (
-		exonLength    = 0
-		exonCnvLength = 0
-		coverages     []string
-	)
-
-	for _, e := range exonInfos {
-		if e.start <= info.end && e.end >= info.start {
-			info.annos = append(info.annos, e.exon)
-			var (
-				hitStart = e.start
-				hitEnd   = e.end
-			)
-			if hitStart < info.start {
-				hitStart = info.start
-			}
-			if hitEnd > info.end {
-				hitEnd = info.end
-			}
-			exonLength += e.end - e.start + 1
-			exonCnvLength += hitEnd - hitStart + 1
-			var coverage = float64(hitEnd-hitStart+1) / float64(e.end-e.start+1)
-			info.coverages = append(info.coverages, coverage)
-			coverages = append(coverages, strconv.FormatFloat(coverage, 'f', 2, 32))
-		}
-	}
-	var n = len(info.annos)
-	if n > 0 {
-		if n == 1 {
-			info.allAnno = info.annos[0]
-		} else {
-			info.allAnno = info.annos[n-1] + "_" + info.annos[0]
-		}
-		info.anno = strings.Join(info.annos, ",")
-		info.coverage = strings.Join(coverages, ",")
-		info.allCoverage = float64(exonCnvLength) / float64(exonLength)
-	}
+	info.CalRatio(qc.DepthX, rawInfos)
+	info.CalPercent(qc.Gender)
+	info.AnnotateExons(exonInfos)
 }
 
 func mergeInfos(x, y *Info) *Info {
