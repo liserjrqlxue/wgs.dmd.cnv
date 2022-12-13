@@ -97,7 +97,7 @@ func LoadNatorStep6(path string) (cnvInfos []*Info, title []string) {
 			break
 		}
 		var datum = make(map[string]string)
-		for j, k := range strings.Split(line, "\t") {
+		for j, k := range strings.Split(strings.TrimSuffix(line, "\n"), "\t") {
 			datum[title[j]] = k
 		}
 		if isEX.MatchString(datum["OMIM_EX"]) {
