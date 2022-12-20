@@ -134,7 +134,7 @@ func LoadLumpyStep6(path string) (cnvInfos []*Info, title []string) {
 		for j, k := range strings.Split(strings.TrimSuffix(line, "\n"), "\t") {
 			datum[title[j]] = k
 		}
-		if isEX.MatchString(datum["OMIM_Gene"]) {
+		if isEX.MatchString(datum["OMIM_exon"]) {
 			var info = &Info{
 				ID:    datum["Sample"],
 				chr:   datum["CHROM"],
