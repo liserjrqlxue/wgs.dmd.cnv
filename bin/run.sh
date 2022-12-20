@@ -4,7 +4,7 @@ set -x
 
 sampleID=$1
 workdir=$2
-cnv={3:-$workdir/$sampleID/CNV/cnvnator/$sampleID.nator.step6}
+cnv=${3:-$workdir/$sampleID/CNV/cnvnator/$sampleID.nator.step6}
 outdir=${4:-$workdir/$sampleID/CNV/cnvnator}
 
 export PATH=$(dirname $(readlink -e $0)):$PATH
