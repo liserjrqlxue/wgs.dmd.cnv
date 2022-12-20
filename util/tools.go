@@ -119,6 +119,40 @@ func LoadNatorStep6(path string) (cnvInfos []*Info, title []string) {
 	return
 }
 
+func LoadLumpyStep6(path string) (cnvInfos []*Info, title []string) {
+	var file = osUtil.Open(path)
+	var buf = bufio.NewReader(file)
+	var line, err = buf.ReadString('\n')
+	simpleUtil.CheckErr(err)
+	title = strings.Split(strings.TrimSuffix(line, "\n"), "\t")
+	for err == nil {
+		line, err = buf.ReadString('\n')
+		if err != nil {
+			break
+		}
+		var datum = make(map[string]string)
+		for j, k := range strings.Split(strings.TrimSuffix(line, "\n"), "\t") {
+			datum[title[j]] = k
+		}
+		if isEX.MatchString(datum["OMIM_Gene"]) {
+			var info = &Info{
+				ID:    datum["Sample"],
+				chr:   datum["CHROM"],
+				start: stringsUtil.Atoi(datum["POS"]),
+				end:   stringsUtil.Atoi(datum["END"]),
+				ratio: stringsUtil.Atof(datum["RATIO"]),
+				raw:   datum,
+			}
+			cnvInfos = append(cnvInfos, info)
+		}
+	}
+	if err != io.EOF {
+		log.Fatalf("bufio.Reader.ReadString('\n') error:[%+v]", err)
+	}
+	simpleUtil.CheckErr(file.Close())
+	return
+}
+
 // OUTPUT
 
 // WriteInfos write []*Info to file

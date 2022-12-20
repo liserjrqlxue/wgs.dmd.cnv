@@ -28,6 +28,11 @@ var (
 		"",
 		"cnv input",
 	)
+	cnvType = flag.String(
+		"cnvType",
+		"nator",
+		"nator or lumpy",
+	)
 	bam = flag.String(
 		"bam",
 		"",
@@ -114,7 +119,20 @@ func main() {
 	}
 
 	log.Println("load cnv")
-	var cnvInfo, title = util.LoadNatorStep6(*cnv)
+	var (
+		cnvInfo []*util.Info
+		title   []string
+	)
+
+	switch *cnvType {
+	case "nator":
+		cnvInfo, title = util.LoadNatorStep6(*cnv)
+	case "lumpy":
+		cnvInfo, title = util.LoadLumpyStep6(*cnv)
+	default:
+		log.Fatalf("-cnvType [%s] invalid, only support [nator,lumpy]", *cnvType)
+	}
+
 	log.Println("load depth")
 	var depthInfo = util.Bam2depth(*bam, outputDepth, *region, *control, qc, skipDepth)
 	log.Println("annotate cnv")
