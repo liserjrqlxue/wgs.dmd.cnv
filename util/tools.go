@@ -174,6 +174,7 @@ func WriteCNV(infos []*Info, title []string, path string) {
 		info.raw["ratio"] = float2str(info.ratio)
 		info.raw["fixRatio"] = float2str(info.fixRatio)
 		info.raw["factor"] = float2str(info.factor)
+		info.raw["percent"] = float2str(info.percent)
 		var line []string
 		for _, s := range title {
 			line = append(line, info.raw[s])

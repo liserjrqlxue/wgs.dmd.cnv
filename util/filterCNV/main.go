@@ -76,7 +76,7 @@ var (
 	)
 	percentThreshold = flag.Float64(
 		"percent",
-		50,
+		60,
 		"percent threshold",
 	)
 )
@@ -141,7 +141,7 @@ func main() {
 	var filterInfo = util.FilterInfos(cnvInfo, -1, *percentThreshold)
 
 	log.Println("write cnv")
-	title = append(title, "depth", "ratio", "fixRatio", "factor")
+	title = append(title, "depth", "ratio", "fixRatio", "factor", "percent")
 	util.WriteCNV(cnvInfo, title, outputCNV)
 	util.WriteCNV(filterInfo, title, outputFilterCNV)
 	log.Println("all done")
